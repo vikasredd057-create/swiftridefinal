@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Driver {{ driver_name }} - SwiftRide ⚡</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Exo 2', sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .lightning-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a0a2e 50%, #0a0a0a 100%);
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2) 0%, rgba(255, 69, 0, 0.2) 100%);
+            border: 2px solid rgba(255, 215, 0, 0.5);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 0 40px rgba(255, 215, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .header h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5em;
+            background: linear-gradient(135deg, #FFD700 0%, #FF4500 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .driver-info {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .driver-badge {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px 30px;
+            border-radius: 10px;
+            border: 2px solid #FFD700;
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: #00ff00;
+            animation: pulse-status 2s ease-in-out infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes pulse-status {
+
+            0%,
+            100% {
+                box-shadow: 0 0 10px #00ff00;
+            }
+
+            50% {
+                box-shadow: 0 0 20px #00ff00;
+            }
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .panel {
+            background: rgba(26, 10, 46, 0.8);
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
+        }
+
+        .panel h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8em;
+            color: #FFD700;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .ride-card {
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(255, 215, 0, 0.2);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ride-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .ride-card:hover::before {
+            left: 100%;
+        }
+
+        .ride-card:hover {
+            border-color: #FFD700;
+            box-shadow: 0 0 25px rgba(255, 215, 0, 0.4);
+            transform: translateY(-5px);
+        }
+
+        .ride-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .ride-id {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #FFD700;
+        }
+
+        .status-badge {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-pending {
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            color: #000;
+            animation: glow-badge 2s ease-in-out infinite;
+        }
+
+        @keyframes glow-badge {
+
+            0%,
+            100% {
+                box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+            }
+
+            50% {
+                box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+            }
+        }
+
+        .status-accepted {
+            background: linear-gradient(135deg, #00ff00, #00cc00);
+            color: #000;
+        }
+
+        .status-completed {
+            background: linear-gradient(135deg, #888, #666);
+            color: #fff;
+        }
+
+        .ride-info {
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.05em;
+        }
+
+        .ride-info .icon {
+            font-size: 1.2em;
+        }
+
+        .ride-actions {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: 700;
+            font-family: 'Orbitron', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-accept {
+            background: linear-gradient(135deg, #00ff00, #00cc00);
+            color: #000;
+        }
+
+        .btn-accept:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0, 255, 0, 0.4);
+        }
+
+        .btn-complete {
+            background: linear-gradient(135deg, #FFD700, #FF4500);
+            color: #000;
+        }
+
+        .btn-complete:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(255, 215, 0, 0.4);
+        }
+
+        .btn-reject {
+            background: linear-gradient(135deg, #ff4444, #cc0000);
+            color: #fff;
+        }
+
+        .btn-reject:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(255, 68, 68, 0.4);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 1.2em;
+        }
+
+        .refresh-info {
+            text-align: center;
+            color: rgba(255, 215, 0, 0.7);
+            margin-top: 20px;
+            font-size: 0.95em;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #FFD700, #FF4500);
+            color: #000;
+            padding: 20px 30px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 1.1em;
+            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.5);
+            transform: translateX(400px);
+            transition: transform 0.5s ease;
+            z-index: 1000;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        @media (max-width: 1024px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Lightning animation for new rides */
+        @keyframes lightning-flash {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+        .new-ride-flash {
+            animation: lightning-flash 0.5s ease-in-out 3;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="lightning-bg"></div>
+
+    <div class="container">
+        <div class="header">
+            <h1>⚡ DRIVER DASHBOARD ⚡</h1>
+            <div class="driver-info">
+                <div class="driver-badge">
+                    <span class="status-indicator"></span>
+                    Driver: <strong>{{ driver_name }}</strong>
+                </div>
+                <div class="driver-badge">
+                    Port: <strong>{{ driver_port }}</strong>
+                </div>
+                <div class="driver-badge">
+                    ID: <strong>#{{ driver_id }}</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard">
+            <div class="panel">
+                <h2>
+                    <span>⚡</span>
+                    <span>INCOMING RIDES</span>
+                </h2>
+                <div id="pendingRides">
+                    <div class="empty-state">⏳ Waiting for ride requests...</div>
+                </div>
+                <div class="refresh-info">Auto-refreshes every 3 seconds</div>
+            </div>
+
+            <div class="panel">
+                <h2>
+                    <span>🚗</span>
+                    <span>MY RIDES</span>
+                </h2>
+                <div id="myRides">
+                    <div class="empty-state">No rides yet</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="notification" class="notification">
+        ⚡ NEW RIDE REQUEST! ⚡
+    </div>
+
+    <script>
+        const driverId = {{ driver_id }};
+        let lastPendingCount = 0;
+
+        // Load pending rides
+        async function loadPendingRides() {
+            try {
+                const response = await fetch('/api/pending-rides');
+                const rides = await response.json();
+
+                const container = document.getElementById('pendingRides');
+
+                if (rides.length === 0) {
+                    container.innerHTML = '<div class="empty-state">⏳ Waiting for ride requests...</div>';
+                    lastPendingCount = 0;
+                    return;
+                }
+
+                // Show notification if new rides arrived
+                if (rides.length > lastPendingCount) {
+                    showNotification();
+                }
+                lastPendingCount = rides.length;
+
+                container.innerHTML = rides.map(ride => `
+                    <div class="ride-card new-ride-flash">
+                        <div class="ride-header">
+                            <div class="ride-id">RIDE #${ride.id}</div>
+                            <div class="status-badge status-pending">${ride.status}</div>
+                        </div>
+                        <div class="ride-info">
+                            <span class="icon">💰</span>
+                            <span style="font-size:1.3em;font-weight:700;color:#FFD700;">₹${ride.price || 'N/A'}</span>
+                            <span style="margin-left:10px;">📏 ${ride.distance_km || 'N/A'} km</span>
+                        </div>
+                        <div class="ride-info">
+                            <span class="icon">📍</span>
+                            <span>From: <strong>${ride.source_address || ride.source}</strong></span>
+                        </div>
+                        <div class="ride-info">
+                            <span class="icon">🎯</span>
+                            <span>To: <strong>${ride.destination_address || ride.destination}</strong></span>
+                        </div>
+                        <div class="ride-info">
+                            <span class="icon">🕒</span>
+                            <span>${new Date(ride.created_at).toLocaleString()}</span>
+                        </div>
+                        ${ride.essentials_order ? `
+                            <div style="margin-top:10px; padding:10px; background:rgba(255, 215, 0, 0.1); border: 1px solid rgba(255, 215, 0, 0.3); border-radius:5px; font-size:0.9em;">
+                                <strong style="color:#FFD700;">🛍️ Swift Essentials Included</strong>
+                                <div style="margin-top:5px;">
+                                    ${ride.essentials_order.items.map(item => `
+                                        <div>• ${item.quantity}x ${item.product ? item.product.name : 'Item #' + item.product_id}</div>
+                                    `).join('')}
+                                </div>
+                                ${ride.essentials_order.custom_request ? `
+                                    <div style="margin-top:8px; padding:8px; background:rgba(255, 255, 255, 0.2); border-left: 3px solid #00ff00; font-style:italic;">
+                                        " ${ride.essentials_order.custom_request} "
+                                    </div>
+                                ` : ''}
+                                ${ride.essentials_order.fulfillment_method === 'DRIVER_PICKUP' ? `
+                                    <div style="margin-top:5px; color:#ff4444;"><strong>🛒 PICKUP REQUIRED</strong></div>
+                                    ${ride.essentials_order.items[0] && ride.essentials_order.items[0].product && ride.essentials_order.items[0].product.store_id ? `
+                                        <div style="font-size:0.9em; margin-top:2px; color:#aaa;">📍 Store ID: #${ride.essentials_order.items[0].product.store_id}</div>
+                                    ` : ''}
+                                ` : '<div style="margin-top:5px; color:#00ff00;"><strong>🎒 Driver Stock</strong></div>'}
+                            </div>
+                        ` : ''}
+                        <div class="ride-actions">
+                            <button class="btn btn-accept" onclick="acceptRide(${ride.id})">
+                                ⚡ ACCEPT RIDE ⚡
+                            </button>
+                            <button class="btn btn-reject" onclick="rejectRide(${ride.id})">
+                                ❌ REJECT
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Failed to load pending rides:', error);
+            }
+        }
+
+        // Load driver's rides
+        async function loadMyRides() {
+            try {
+                const response = await fetch('/api/my-rides');
+                const rides = await response.json();
+
+                const container = document.getElementById('myRides');
+
+                if (rides.length === 0) {
+                    container.innerHTML = '<div class="empty-state">No rides yet</div>';
+                    return;
+                }
+
+                container.innerHTML = rides.map(ride => `
+                    <div class="ride-card">
+                        <div class="ride-header">
+                            <div class="ride-id">RIDE #${ride.id}</div>
+                            <div class="status-badge status-${ride.status.toLowerCase()}">${ride.status}</div>
+                        </div>
+                        <div class="ride-info">
+                            <span class="icon">💰</span>
+                            <span style="font-size:1.3em;font-weight:700;color:#FFD700;">₹${ride.price || 'N/A'}</span>
+                            <span style="margin-left:10px;">📏 ${ride.distance_km || 'N/A'} km</span>
+                        </div>
+                        <div class="ride-info">
+                            <span class="icon">📍</span>
+                            <span>From: <strong>${ride.source_address || ride.source}</strong></span>
+                        </div>
+                        <div class="ride-info">
+                            <span class="icon">🎯</span>
+                            <span>To: <strong>${ride.destination_address || ride.destination}</strong></span>
+                        </div>
+                        <div class="ride-info">
+                            <span class="icon">🕒</span>
+                            <span>${new Date(ride.created_at).toLocaleString()}</span>
+                        </div>
+                        ${ride.essentials_order ? `
+                            <div style="margin-top:10px; padding:10px; background:rgba(255, 215, 0, 0.1); border: 1px solid rgba(255, 215, 0, 0.3); border-radius:5px; font-size:0.9em;">
+                                <strong style="color:#FFD700;">🛍️ Swift Essentials Included</strong>
+                                <div style="margin-top:5px;">
+                                    ${ride.essentials_order.items.map(item => `
+                                        <div>• ${item.quantity}x ${item.product ? item.product.name : 'Item #' + item.product_id}</div>
+                                    `).join('')}
+                                </div>
+                                ${ride.essentials_order.custom_request ? `
+                                    <div style="margin-top:8px; padding:8px; background:rgba(255, 255, 255, 0.2); border-left: 3px solid #00ff00; font-style:italic;">
+                                        " ${ride.essentials_order.custom_request} "
+                                    </div>
+                                ` : ''}
+                                ${ride.essentials_order.fulfillment_method === 'DRIVER_PICKUP' ? `
+                                    <div style="margin-top:5px; color:#ff4444;"><strong>🛒 PICKUP REQUIRED</strong></div>
+                                ` : '<div style="margin-top:5px; color:#00ff00;"><strong>🎒 Driver Stock</strong></div>'}
+                            </div>
+                        ` : ''}
+                        ${ride.status === 'ACCEPTED' ? `
+                            <div class="ride-actions">
+                                <button class="btn btn-complete" onclick="completeRide(${ride.id})">
+                                    ✅ COMPLETE RIDE
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Failed to load my rides:', error);
+            }
+        }
+
+        // Accept ride
+        async function acceptRide(rideId) {
+            try {
+                const response = await fetch(`/api/accept-ride/${rideId}`, {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    alert('⚡ Ride accepted successfully! ⚡');
+                    loadPendingRides();
+                    loadMyRides();
+                } else {
+                    const data = await response.json();
+                    alert('❌ ' + (data.error || 'Failed to accept ride. It may have been taken by another driver.'));
+                    loadPendingRides();
+                }
+            } catch (error) {
+                alert('❌ Error accepting ride');
+            }
+        }
+
+        // Complete ride
+        async function completeRide(rideId) {
+            try {
+                const response = await fetch(`/api/complete-ride/${rideId}`, {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    alert('✅ Ride completed successfully!');
+                    loadMyRides();
+                } else {
+                    alert('❌ Failed to complete ride');
+                }
+            } catch (error) {
+                alert('❌ Error completing ride');
+            }
+        }
+
+        // Reject ride
+        async function rejectRide(rideId) {
+            try {
+                const response = await fetch(`/api/reject-ride/${rideId}`, {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    loadPendingRides();
+                } else {
+                    alert('❌ Failed to reject ride');
+                }
+            } catch (error) {
+                alert('❌ Error rejecting ride');
+            }
+        }
+
+        // Show notification
+        function showNotification() {
+            const notification = document.getElementById('notification');
+            notification.classList.add('show');
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Initialize
+        loadPendingRides();
+        loadMyRides();
+
+        // Auto-refresh every 3 seconds
+        setInterval(() => {
+            loadPendingRides();
+            loadMyRides();
+        }, 3000);
+    </script>
+</body>
+
+</html>

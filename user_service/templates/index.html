@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SwiftRide - Lightning Fast Rides ⚡</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Exo 2', sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .lightning-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a0a2e 50%, #0a0a0a 100%);
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3em;
+            background: linear-gradient(135deg, #FFD700 0%, #FF4500 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+
+            0%,
+            100% {
+                filter: brightness(1);
+            }
+
+            50% {
+                filter: brightness(1.3);
+            }
+        }
+
+        .tagline {
+            color: #FFD700;
+            font-size: 1.2em;
+            margin-top: 10px;
+        }
+
+        .booking-container {
+            background: rgba(26, 10, 46, 0.8);
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .search-section {
+            margin-bottom: 20px;
+        }
+
+        .search-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .search-group label {
+            display: block;
+            color: #FFD700;
+            font-weight: 600;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 15px 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 16px;
+            font-family: 'Exo 2', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #FFD700;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+            background: rgba(0, 0, 0, 0.7);
+        }
+
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            border-radius: 10px;
+            margin-top: 5px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+
+        .suggestion-item {
+            padding: 12px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+            transition: all 0.2s ease;
+        }
+
+        .suggestion-item:hover {
+            background: rgba(255, 215, 0, 0.2);
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #FFD700 0%, #FF4500 100%);
+            color: #000;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.3em;
+            font-weight: 700;
+            font-family: 'Orbitron', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.5);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(255, 69, 0, 0.3));
+            color: #FFD700;
+            border: 2px solid #FFD700;
+        }
+
+        .price-display {
+            background: linear-gradient(135deg, #FFD700, #FF4500);
+            color: #000;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .price-display .label {
+            font-size: 0.9em;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .price-display .amount {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5em;
+            font-weight: 900;
+        }
+
+        .distance-display {
+            text-align: center;
+            color: #FFD700;
+            margin: 15px 0;
+            font-size: 1.1em;
+            display: none;
+        }
+
+        .map-container {
+            display: none;
+            background: rgba(26, 10, 46, 0.8);
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            border-radius: 20px;
+            padding: 20px;
+            margin-top: 20px;
+            height: 500px;
+        }
+
+        .map-container.active {
+            display: block;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            border-radius: 15px;
+        }
+
+        .map-instructions {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            text-align: center;
+            color: #FFD700;
+        }
+
+        .location-info {
+            margin-bottom: 15px;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            font-size: 0.95em;
+        }
+
+        .location-info strong {
+            color: #FFD700;
+        }
+
+        .message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            display: none;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.success {
+            background: rgba(0, 255, 0, 0.1);
+            color: #00ff00;
+            border: 2px solid #00ff00;
+        }
+
+        .message.error {
+            background: rgba(255, 0, 0, 0.1);
+            color: #ff0000;
+            border: 2px solid #ff0000;
+        }
+
+        .mode-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .mode-toggle .btn {
+            flex: 1;
+            margin: 0;
+        }
+
+        .essentials-section {
+            margin-top: 20px;
+            border-top: 1px solid rgba(255, 215, 0, 0.3);
+            padding-top: 20px;
+        }
+
+        .essentials-grid {
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .product-card {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+            position: relative;
+        }
+
+        .product-card:hover {
+            border-color: #FFD700;
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        .product-name {
+            font-size: 0.85em;
+            margin-bottom: 5px;
+            color: #fff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .product-price {
+            color: #FFD700;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .cart-summary {
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #aaa;
+            text-align: right;
+        }
+
+        .toggle-essentials {
+            color: #FFD700;
+            text-decoration: underline;
+            cursor: pointer;
+            font-size: 0.9em;
+            float: right;
+        }
+
+        .qty-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #00ff00;
+            color: #000;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="lightning-bg"></div>
+
+    <div class="container">
+        <div class="header">
+            <h1>⚡ SWIFTRIDE ⚡</h1>
+            <p class="tagline">Lightning Fast Rides with Real-Time Pricing</p>
+        </div>
+
+        <div class="booking-container">
+            <!-- Mode Toggle -->
+            <div class="mode-toggle">
+                <button class="btn btn-secondary" id="searchModeBtn" onclick="switchMode('search')">
+                    🔍 SEARCH MODE
+                </button>
+                <button class="btn btn-secondary" id="mapModeBtn" onclick="switchMode('map')">
+                    🗺️ BOOK BY MAP
+                </button>
+            </div>
+
+            <!-- Search Section -->
+            <div class="search-section" id="searchSection">
+                <div class="search-group">
+                    <label for="pickupSearch">📍 Pickup Location</label>
+                    <input type="text" id="pickupSearch" class="search-input"
+                        placeholder="Search for pickup location..." autocomplete="off">
+                    <div class="suggestions" id="pickupSuggestions"></div>
+                </div>
+
+                <div class="search-group">
+                    <label for="dropoffSearch">🎯 Drop-off Location</label>
+                    <input type="text" id="dropoffSearch" class="search-input"
+                        placeholder="Search for drop-off location..." autocomplete="off">
+                    <div class="suggestions" id="dropoffSuggestions"></div>
+                </div>
+
+                <div id="selectedLocations" style="display:none;">
+                    <div class="location-info">
+                        <strong>From:</strong> <span id="selectedPickup"></span>
+                    </div>
+                    <div class="location-info">
+                        <strong>To:</strong> <span id="selectedDropoff"></span>
+                    </div>
+                </div>
+
+                <div class="distance-display" id="distanceDisplay">
+                    📏 Distance: <strong><span id="distanceValue">0</span> km</strong>
+                </div>
+
+                <div class="price-display" id="priceDisplay">
+                    <div class="label">ESTIMATED FARE</div>
+                    <div class="amount">₹<span id="priceValue">0</span></div>
+                </div>
+
+                <div class="essentials-section">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
+                        <h3 style="color:#fff; font-size:1.1em; display:flex; align-items:center; gap:5px;">🛍️ Swift
+                            Essentials <span style="font-size:0.7em; color:#aaa; font-weight:normal;">(Snacks &
+                                Drinks)</span></h3>
+                        <span class="toggle-essentials" onclick="toggleEssentials()">Show Catalog</span>
+                    </div>
+                    <div class="cart-summary" id="cartSummary">No items added</div>
+                    <div class="essentials-grid" id="essentialsGrid" style="display:none; display:grid;">
+                        <!-- Initially hidden but grid when shown. Inline style override needed for toggle logic or class toggle -->
+                        <div style="grid-column: 1/-1; text-align:center; color:#aaa; padding:10px;">Loading catalog...
+                        </div>
+                    </div>
+                    <div style="margin-top: 15px;">
+                        <input type="text" id="customEssentials" class="search-input"
+                            placeholder="Type a custom request... (e.g., Extra spicy chips)"
+                            style="font-size:0.9em; padding:10px; background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 215, 0, 0.2);">
+                    </div>
+                </div>
+
+                <button class="btn" id="requestBtn" disabled onclick="requestRide()">
+                    ⚡ REQUEST RIDE ⚡
+                </button>
+            </div>
+
+            <!-- Map Section -->
+            <div class="map-container" id="mapContainer">
+                <div class="map-instructions">
+                    Click on map to set pickup (📍), then click again for drop-off (🎯)
+                </div>
+                <div id="map"></div>
+            </div>
+
+            <div id="message" class="message"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentMode = 'search';
+        let map = null;
+        let pickupMarker = null;
+        let dropoffMarker = null;
+        let routeLine = null;
+        let pickupCoords = null;
+        let dropoffCoords = null;
+        let pickupAddress = '';
+        let dropoffAddress = '';
+        let searchTimeout = null;
+        let cart = {}; // pid -> qty
+        let products = [];
+        let baseRidePrice = 0;
+
+        // Initialize map (lazy load)
+        function initMap() {
+            if (!map) {
+                map = L.map('map').setView([20.5937, 78.9629], 5);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(map);
+
+                // Custom icons
+                const pickupIcon = L.divIcon({
+                    html: '<div style="background:#00ff00;width:30px;height:30px;border-radius:50%;border:3px solid #fff;display:flex;align-items:center;justify-content:center;font-size:18px;">📍</div>',
+                    iconSize: [30, 30],
+                    className: ''
+                });
+
+                const dropoffIcon = L.divIcon({
+                    html: '<div style="background:#ff0000;width:30px;height:30px;border-radius:50%;border:3px solid #fff;display:flex;align-items:center;justify-content:center;font-size:18px;">🎯</div>',
+                    iconSize: [30, 30],
+                    className: ''
+                });
+
+                // Handle map clicks
+                map.on('click', function (e) {
+                    const lat = e.latlng.lat;
+                    const lng = e.latlng.lng;
+
+                    if (!pickupMarker) {
+                        pickupMarker = L.marker([lat, lng], { icon: pickupIcon }).addTo(map);
+                        pickupCoords = { lat, lng };
+
+                        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&countrycodes=in`)
+                            .then(res => res.json())
+                            .then(data => {
+                                pickupAddress = data.display_name;
+                            });
+                    } else if (!dropoffMarker) {
+                        dropoffMarker = L.marker([lat, lng], { icon: dropoffIcon }).addTo(map);
+                        dropoffCoords = { lat, lng };
+
+                        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&countrycodes=in`)
+                            .then(res => res.json())
+                            .then(data => {
+                                dropoffAddress = data.display_name;
+                                calculateRoute();
+                            });
+                    } else {
+                        resetMapSelection();
+                        pickupMarker = L.marker([lat, lng], { icon: pickupIcon }).addTo(map);
+                        pickupCoords = { lat, lng };
+
+                        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&countrycodes=in`)
+                            .then(res => res.json())
+                            .then(data => {
+                                pickupAddress = data.display_name;
+                            });
+                    }
+                });
+            }
+        }
+
+        // Switch between search and map mode
+        function switchMode(mode) {
+            currentMode = mode;
+
+            if (mode === 'search') {
+                document.getElementById('searchSection').style.display = 'block';
+                document.getElementById('mapContainer').classList.remove('active');
+                document.getElementById('searchModeBtn').style.background = 'linear-gradient(135deg, #FFD700 0%, #FF4500 100%)';
+                document.getElementById('searchModeBtn').style.color = '#000';
+                document.getElementById('mapModeBtn').style.background = 'linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(255, 69, 0, 0.3))';
+                document.getElementById('mapModeBtn').style.color = '#FFD700';
+            } else {
+                document.getElementById('searchSection').style.display = 'none';
+                document.getElementById('mapContainer').classList.add('active');
+                document.getElementById('mapModeBtn').style.background = 'linear-gradient(135deg, #FFD700 0%, #FF4500 100%)';
+                document.getElementById('mapModeBtn').style.color = '#000';
+                document.getElementById('searchModeBtn').style.background = 'linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(255, 69, 0, 0.3))';
+                document.getElementById('searchModeBtn').style.color = '#FFD700';
+
+                initMap();
+                setTimeout(() => map.invalidateSize(), 100);
+            }
+        }
+
+        // Search location
+        function searchLocation(query, suggestionsId) {
+            if (query.length < 3) {
+                document.getElementById(suggestionsId).style.display = 'none';
+                return;
+            }
+
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(async () => {
+                try {
+                    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=in&limit=5`);
+                    const results = await response.json();
+
+                    const suggestionsDiv = document.getElementById(suggestionsId);
+                    suggestionsDiv.innerHTML = '';
+
+                    if (results.length > 0) {
+                        results.forEach(result => {
+                            const item = document.createElement('div');
+                            item.className = 'suggestion-item';
+                            item.textContent = result.display_name;
+                            item.onclick = () => selectLocation(result, suggestionsId);
+                            suggestionsDiv.appendChild(item);
+                        });
+                        suggestionsDiv.style.display = 'block';
+                    } else {
+                        suggestionsDiv.style.display = 'none';
+                    }
+                } catch (error) {
+                    console.error('Search error:', error);
+                }
+            }, 500);
+        }
+
+        // Select location from suggestions
+        function selectLocation(location, suggestionsId) {
+            const isPickup = suggestionsId === 'pickupSuggestions';
+
+            if (isPickup) {
+                pickupCoords = { lat: parseFloat(location.lat), lng: parseFloat(location.lon) };
+                pickupAddress = location.display_name;
+                document.getElementById('pickupSearch').value = location.display_name;
+                document.getElementById('selectedPickup').textContent = location.display_name;
+            } else {
+                dropoffCoords = { lat: parseFloat(location.lat), lng: parseFloat(location.lon) };
+                dropoffAddress = location.display_name;
+                document.getElementById('dropoffSearch').value = location.display_name;
+                document.getElementById('selectedDropoff').textContent = location.display_name;
+            }
+
+            document.getElementById(suggestionsId).style.display = 'none';
+
+            if (pickupCoords && dropoffCoords) {
+                document.getElementById('selectedLocations').style.display = 'block';
+                calculateRoute();
+            }
+        }
+
+        // Calculate route and price
+        function calculateRoute() {
+            if (!pickupCoords || !dropoffCoords) return;
+
+            // Draw line if in map mode
+            if (currentMode === 'map' && map) {
+                if (routeLine) {
+                    map.removeLayer(routeLine);
+                }
+                routeLine = L.polyline([
+                    [pickupCoords.lat, pickupCoords.lng],
+                    [dropoffCoords.lat, dropoffCoords.lng]
+                ], {
+                    color: '#FFD700',
+                    weight: 4,
+                    opacity: 0.7
+                }).addTo(map);
+
+                map.fitBounds(routeLine.getBounds(), { padding: [50, 50] });
+            }
+
+            // Calculate distance (Haversine formula)
+            const R = 6371;
+            const dLat = (dropoffCoords.lat - pickupCoords.lat) * Math.PI / 180;
+            const dLon = (dropoffCoords.lng - pickupCoords.lng) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(pickupCoords.lat * Math.PI / 180) * Math.cos(dropoffCoords.lat * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            const distance = R * c;
+
+            // Calculate price
+            const baseFare = 50;
+            const perKmRate = 15;
+            const price = Math.round((baseFare + (distance * perKmRate)) / 10) * 10;
+
+            // Display results
+            // Display results
+            document.getElementById('distanceValue').textContent = distance.toFixed(1);
+            baseRidePrice = price; // Store base price
+            updateTotalPrice(); // Update UI
+            document.getElementById('distanceDisplay').style.display = 'block';
+            document.getElementById('priceDisplay').style.display = 'block';
+            document.getElementById('requestBtn').disabled = false;
+        }
+
+        // Reset map selection
+        function resetMapSelection() {
+            if (pickupMarker) map.removeLayer(pickupMarker);
+            if (dropoffMarker) map.removeLayer(dropoffMarker);
+            if (routeLine) map.removeLayer(routeLine);
+            pickupMarker = null;
+            dropoffMarker = null;
+            routeLine = null;
+        }
+
+        // Request ride
+        async function requestRide() {
+            if (!pickupCoords || !dropoffCoords) return;
+
+            const distance = parseFloat(document.getElementById('distanceValue').textContent);
+
+            // Build Essentials List
+            const essentialsItems = [];
+            for (const [pid, qty] of Object.entries(cart)) {
+                if (qty > 0) {
+                    essentialsItems.push({ product_id: parseInt(pid), quantity: qty });
+                }
+            }
+
+            const rideData = {
+                source: `${pickupCoords.lat},${pickupCoords.lng}`,
+                destination: `${dropoffCoords.lat},${dropoffCoords.lng}`,
+                source_address: pickupAddress,
+                destination_address: dropoffAddress,
+                destination_address: dropoffAddress,
+                distance_km: distance,
+                essentials: essentialsItems,
+                custom_essentials_request: document.getElementById('customEssentials').value
+            };
+
+            try {
+                const response = await fetch('/api/request-ride', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(rideData)
+                });
+
+                const data = await response.json();
+                const messageDiv = document.getElementById('message');
+
+                if (response.ok) {
+                    messageDiv.className = 'message success';
+                    messageDiv.style.display = 'block';
+                    messageDiv.innerHTML = `
+                        <strong>⚡ RIDE REQUESTED! ⚡</strong><br><br>
+                        Ride ID: #${data.id}<br>
+                        Distance: ${data.distance_km} km<br>
+                        Fare: ₹${data.price}<br><br>
+                        🚗 Broadcasting to all drivers...<br>
+                        ⏱️ You'll be matched in seconds!
+                    `;
+
+                    // Reset after 5 seconds
+                    setTimeout(() => {
+                        location.reload();
+                    }, 5000);
+                } else {
+                    throw new Error('Failed to request ride');
+                }
+            } catch (error) {
+                const messageDiv = document.getElementById('message');
+                messageDiv.className = 'message error';
+                messageDiv.style.display = 'block';
+                messageDiv.innerHTML = `
+                    <strong>❌ ERROR!</strong><br>
+                    Failed to request ride. Please try again.
+                `;
+            }
+        }
+
+        // Event listeners
+        document.getElementById('pickupSearch').addEventListener('input', (e) => {
+            searchLocation(e.target.value, 'pickupSuggestions');
+        });
+
+        document.getElementById('dropoffSearch').addEventListener('input', (e) => {
+            searchLocation(e.target.value, 'dropoffSuggestions');
+        });
+
+        // Close suggestions when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.search-group')) {
+                document.getElementById('pickupSuggestions').style.display = 'none';
+                document.getElementById('dropoffSuggestions').style.display = 'none';
+            }
+        });
+
+        // Initialize in search mode
+        switchMode('search');
+
+        // Essentials Logic
+        async function loadProducts() {
+            try {
+                const res = await fetch('/api/essentials/products');
+                products = await res.json();
+                renderProducts();
+            } catch (e) {
+                console.error("Failed to load products", e);
+                document.getElementById('essentialsGrid').innerHTML = '<div style="grid-column: 1/-1; text-align:center; color:red;">Failed to load catalog</div>';
+            }
+        }
+
+        function renderProducts() {
+            const grid = document.getElementById('essentialsGrid');
+            grid.innerHTML = '';
+            if (products.length === 0) {
+                grid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; color:#aaa;">No items available</div>';
+                return;
+            }
+            products.forEach(p => {
+                const div = document.createElement('div');
+                div.className = 'product-card';
+                div.onclick = () => updateCart(p.id);
+                div.innerHTML = `
+                    <div class="product-name" title="${p.name}">${p.name}</div>
+                    <div class="product-price">₹${p.price}</div>
+                    <div class="qty-badge" id="qty-${p.id}">0</div>
+                `;
+                grid.appendChild(div);
+            });
+            updateCartUI();
+        }
+
+        function updateCart(pid) {
+            if (!cart[pid]) cart[pid] = 0;
+            cart[pid]++;
+            updateCartUI();
+        }
+
+        function updateCartUI() {
+            let totalItems = 0;
+            let totalPrice = 0;
+            for (const [pid, qty] of Object.entries(cart)) {
+                if (qty > 0) {
+                    totalItems += qty;
+                    const p = products.find(prod => prod.id == pid);
+                    if (p) totalPrice += p.price * qty;
+
+                    const badge = document.getElementById(`qty-${pid}`);
+                    if (badge) {
+                        badge.textContent = qty;
+                        badge.style.display = 'flex';
+                    }
+                }
+            }
+
+            document.getElementById('cartSummary').textContent = totalItems > 0
+                ? `${totalItems} items • ₹${totalPrice}`
+                : 'No items added';
+
+            updateTotalPrice();
+        }
+
+        function updateTotalPrice() {
+            let cartTotal = 0;
+            for (const [pid, qty] of Object.entries(cart)) {
+                const p = products.find(prod => prod.id == pid);
+                if (p) cartTotal += p.price * qty;
+            }
+
+            const total = baseRidePrice + cartTotal;
+
+            if (cartTotal > 0 && baseRidePrice > 0) {
+                document.getElementById('priceDisplay').innerHTML = `
+                    <div class="label">TOTAL FARE</div>
+                    <div class="amount">₹${total}</div>
+                    <div style="font-size:0.6em; opacity:0.7; margin-top:5px;">Ride: ₹${baseRidePrice} + Items: ₹${cartTotal}</div>
+                 `;
+            } else {
+                document.getElementById('priceDisplay').innerHTML = `
+                    <div class="label">ESTIMATED FARE</div>
+                    <div class="amount">₹${total}</div>
+                 `;
+                const priceValueEl = document.getElementById('priceValue');
+                if (priceValueEl) priceValueEl.textContent = total;
+            }
+        }
+
+        function toggleEssentials() {
+            const grid = document.getElementById('essentialsGrid');
+            const btn = document.querySelector('.toggle-essentials');
+            if (grid.style.display === 'none') {
+                grid.style.display = 'grid';
+                btn.textContent = 'Hide Catalog';
+                if (products.length === 0) loadProducts();
+            } else {
+                grid.style.display = 'none';
+                btn.textContent = 'Show Catalog';
+            }
+        }
+    </script>
+</body>
+
+</html>

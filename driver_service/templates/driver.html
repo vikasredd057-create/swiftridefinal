@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SwiftRide - Driver Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            color: #f5576c;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .driver-select {
+            margin-top: 20px;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .ride-item {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #f5576c;
+        }
+
+        .ride-info {
+            margin-bottom: 10px;
+        }
+
+        .ride-info strong {
+            color: #333;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+        }
+
+        .btn-accept {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .btn-complete {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-accepted {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #999;
+            padding: 40px;
+        }
+
+        .refresh-info {
+            text-align: center;
+            color: #666;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚕 Driver Dashboard</h1>
+            <div class="driver-select">
+                <label for="driverSelect"><strong>Select Driver:</strong></label>
+                <select id="driverSelect">
+                    <option value="">Loading drivers...</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="dashboard">
+            <div class="card">
+                <h2>📋 Pending Rides</h2>
+                <div id="pendingRides">
+                    <div class="empty-state">Loading...</div>
+                </div>
+                <div class="refresh-info">Auto-refreshes every 60 seconds</div>
+            </div>
+
+            <div class="card">
+                <h2>🚗 My Rides</h2>
+                <div id="myRides">
+                    <div class="empty-state">Select a driver to view rides</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentDriverId = null;
+        let refreshInterval = null;
+
+        // Load drivers on page load
+        async function loadDrivers() {
+            try {
+                const response = await fetch('/api/drivers');
+                const drivers = await response.json();
+
+                const select = document.getElementById('driverSelect');
+                select.innerHTML = '<option value="">-- Select a driver --</option>';
+
+                drivers.forEach(driver => {
+                    const option = document.createElement('option');
+                    option.value = driver.id;
+                    option.textContent = `${driver.name} - ${driver.vehicle_number} (${driver.status})`;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Failed to load drivers:', error);
+            }
+        }
+
+        // Load pending rides
+        async function loadPendingRides() {
+            try {
+                const response = await fetch('/api/pending-rides');
+                const rides = await response.json();
+
+                const container = document.getElementById('pendingRides');
+
+                if (rides.length === 0) {
+                    container.innerHTML = '<div class="empty-state">No pending rides</div>';
+                    return;
+                }
+
+                container.innerHTML = rides.map(ride => `
+                    <div class="ride-item">
+                        <div class="ride-info">
+                            <strong>Ride #${ride.id}</strong>
+                            <span class="status-badge status-pending">${ride.status}</span>
+                        </div>
+                        <div class="ride-info">👤 ${ride.user_name} - ${ride.user_phone}</div>
+                        <div class="ride-info">📍 From: ${ride.source}</div>
+                        <div class="ride-info">📍 To: ${ride.destination}</div>
+                        <div class="ride-info">🕒 ${new Date(ride.created_at).toLocaleString()}</div>
+                        ${ride.essentials_order ? `
+                            <div style="margin-top:10px; padding:10px; background:#fff3cd; border-radius:5px; font-size:0.9em;">
+                                <strong>🛍️ Swift Essentials Included</strong>
+                                <div style="margin-top:5px;">
+                                    ${ride.essentials_order.items.map(item => `
+                                        <div>• ${item.quantity}x ${item.product ? item.product.name : 'Item #' + item.product_id} (₹${item.price_at_booking})</div>
+                                    `).join('')}
+                                </div>
+                                ${ride.essentials_order.fulfillment_method === 'DRIVER_PICKUP' ? `
+                                    <div style="margin-top:5px; color:#c82333;"><strong>🛒 PICKUP REQUIRED</strong></div>
+                                ` : '<div style="margin-top:5px; color:#218838;"><strong>🎒 Driver Stock</strong></div>'}
+                            </div>
+                        ` : ''}
+                        ${currentDriverId ? `<button class="btn btn-accept" onclick="acceptRide(${ride.id})">Accept Ride</button>` : ''}
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Failed to load pending rides:', error);
+            }
+        }
+
+        // Load driver's rides
+        async function loadMyRides() {
+            if (!currentDriverId) {
+                document.getElementById('myRides').innerHTML = '<div class="empty-state">Select a driver to view rides</div>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/driver/${currentDriverId}/rides`);
+                const rides = await response.json();
+
+                const container = document.getElementById('myRides');
+
+                if (rides.length === 0) {
+                    container.innerHTML = '<div class="empty-state">No rides yet</div>';
+                    return;
+                }
+
+                container.innerHTML = rides.map(ride => `
+                    <div class="ride-item">
+                        <div class="ride-info">
+                            <strong>Ride #${ride.id}</strong>
+                            <span class="status-badge status-${ride.status.toLowerCase()}">${ride.status}</span>
+                        </div>
+                        <div class="ride-info">👤 ${ride.user_name} - ${ride.user_phone}</div>
+                        <div class="ride-info">📍 From: ${ride.source}</div>
+                        <div class="ride-info">📍 To: ${ride.destination}</div>
+                        <div class="ride-info">🕒 ${new Date(ride.created_at).toLocaleString()}</div>
+                        ${ride.essentials_order ? `
+                            <div style="margin-top:10px; padding:10px; background:#e2e6ea; border-radius:5px; font-size:0.9em;">
+                                <strong>🛍️ Swift Essentials Included</strong>
+                                <div style="margin-top:5px;">
+                                    ${ride.essentials_order.items.map(item => `
+                                        <div>• ${item.quantity}x ${item.product ? item.product.name : 'Item #' + item.product_id}</div>
+                                    `).join('')}
+                                </div>
+                                ${ride.essentials_order.fulfillment_method === 'DRIVER_PICKUP' ? `
+                                    <div style="margin-top:5px; color:#c82333;"><strong>🛒 PICKUP REQUIRED</strong></div>
+                                    ${ride.essentials_order.items[0].product && ride.essentials_order.items[0].product.store_id ? `
+                                        <div style="font-size:0.9em; margin-top:2px;">📍 Store: Store #${ride.essentials_order.items[0].product.store_id}</div>
+                                    ` : ''}
+                                ` : '<div style="margin-top:5px; color:#218838;"><strong>🎒 Driver Stock</strong></div>'}
+                            </div>
+                        ` : ''}
+                        ${ride.status === 'ACCEPTED' ? `<button class="btn btn-complete" onclick="completeRide(${ride.id})">Complete Ride</button>` : ''}
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Failed to load my rides:', error);
+            }
+        }
+
+        // Accept ride
+        async function acceptRide(rideId) {
+            if (!currentDriverId) {
+                alert('Please select a driver first');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/accept-ride/${rideId}?driver_id=${currentDriverId}`, {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    alert('Ride accepted successfully!');
+                    loadPendingRides();
+                    loadMyRides();
+                } else {
+                    alert('Failed to accept ride. It may have been taken by another driver.');
+                }
+            } catch (error) {
+                alert('Error accepting ride');
+            }
+        }
+
+        // Complete ride
+        async function completeRide(rideId) {
+            try {
+                const response = await fetch(`/api/complete-ride/${rideId}?driver_id=${currentDriverId}`, {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    alert('Ride completed successfully!');
+                    loadMyRides();
+                } else {
+                    alert('Failed to complete ride');
+                }
+            } catch (error) {
+                alert('Error completing ride');
+            }
+        }
+
+        // Driver selection change
+        document.getElementById('driverSelect').addEventListener('change', (e) => {
+            currentDriverId = e.target.value ? parseInt(e.target.value) : null;
+            loadMyRides();
+            loadPendingRides();
+        });
+
+        // Initialize
+        loadDrivers();
+        loadPendingRides();
+
+        // Auto-refresh every 60 seconds
+        refreshInterval = setInterval(() => {
+            loadPendingRides();
+            if (currentDriverId) {
+                loadMyRides();
+            }
+        }, 60000);
+    </script>
+</body>
+
+</html>
