@@ -58,12 +58,23 @@ def main():
     
     # 5. Push
     print("Pushing to remote...")
-    # Start with standard push
     success = run_git_cmd(["push", "-u", "origin", "main"])
     
     if not success:
-        print("\nStandard push failed. Trying to force set upstream...")
-        run_git_cmd(["push", "--set-upstream", "origin", "main"])
+        print("\nStandard push failed. Remote might be ahead.")
+        print("Attempting to pull --rebase...")
+        pull_success = run_git_cmd(["pull", "origin", "main", "--rebase"])
+        
+        if pull_success:
+            print("Rebase successful. Pushing again...")
+            run_git_cmd(["push", "-u", "origin", "main"])
+        else:
+            print("Rebase failed. This might be a fresh repo/conflict.")
+            # Optional: Force push if you are sure. 
+            # For this user context "push code to repository" usually implies "update remote to match local".
+            # I won't force push automatically unless I know it's safe, but I will try to handle the 'non-fast-forward' specifically.
+            print("Trying push with force-with-lease...")
+            run_git_cmd(["push", "-u", "origin", "main", "--force-with-lease"])
 
 if __name__ == "__main__":
     main()
