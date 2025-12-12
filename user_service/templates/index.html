@@ -387,6 +387,12 @@
         <div class="header">
             <h1>⚡ SWIFTRIDE ⚡</h1>
             <p class="tagline">Lightning Fast Rides with Real-Time Pricing</p>
+            {% if user_id != 'Guest' %}
+            <div
+                style="margin-top: 10px; font-size: 0.9em; color: #FFD700; background: rgba(255, 215, 0, 0.1); display: inline-block; padding: 5px 15px; border-radius: 15px; border: 1px solid rgba(255, 215, 0, 0.3);">
+                👤 {{ user_name }} (ID: {{ user_id }})
+            </div>
+            {% endif %}
         </div>
 
         <div class="booking-container">

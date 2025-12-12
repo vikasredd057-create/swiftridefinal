@@ -13,10 +13,18 @@ templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "t
 # Backend service URL
 BACKEND_URL = "http://localhost:8001"
 
+# Get user info from environment variables
+USER_ID = os.getenv('USER_ID', 'Guest')
+USER_NAME = os.getenv('USER_NAME', 'Guest User')
+
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     """Render user homepage"""
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse("index.html", {
+        "request": request,
+        "user_id": USER_ID,
+        "user_name": USER_NAME
+    })
 
 @app.post("/api/request-ride")
 async def request_ride(ride_data: dict):

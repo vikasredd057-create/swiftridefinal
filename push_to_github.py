@@ -85,6 +85,26 @@ def push_to_github(repo):
     
     try:
         remote = repo.remote("origin")
+        
+        # Ensure we're on the correct branch
+        try:
+            repo.heads[BRANCH_NAME]
+        except IndexError:
+            # Branch doesn't exist, create it
+            print(f"Creating branch '{BRANCH_NAME}'...")
+            repo.create_head(BRANCH_NAME)
+        
+        # Checkout the branch
+        repo.heads[BRANCH_NAME].checkout()
+        print(f"✓ Switched to branch '{BRANCH_NAME}'")
+        
+        # Stage and commit any uncommitted changes
+        untracked = repo.untracked_files
+        if repo.index.diff('HEAD') or untracked:
+            print("Staging remaining files...")
+            repo.git.add(A=True)
+            print("✓ All files staged")
+        
         # Try to push, forcing if needed
         push_info = remote.push(BRANCH_NAME, force=True)
         
@@ -103,6 +123,8 @@ def push_to_github(repo):
         return False
     except Exception as e:
         print(f"✗ Unexpected error: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 def main():
